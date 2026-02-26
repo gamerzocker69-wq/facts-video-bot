@@ -29,7 +29,15 @@ def generate_auto():
         
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
         r = requests.post(url, json=payload)
-        raw = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+       response_json = r.json()
+print("GEMINI RESPONSE:", response_json)
+if "candidates" not in response_json:
+    return jsonify({"error": "Gemini error", "details": response_json}), 500
+     response_json = r.json()
+print("GEMINI RESPONSE:", response_json)
+if "candidates" not in response_json:
+    return jsonify({"error": "Gemini error", "details": response_json}), 500
+        raw = response_json["candidates"][0]["content"]["parts"][0]["text"]
         raw = raw.strip().replace("```json","").replace("```","").strip()
         fact = json.loads(raw)
 
