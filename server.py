@@ -24,7 +24,7 @@ def health():
 @app.route("/generate-auto", methods=["POST"])
 def generate_auto():
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
         prompt = """Génère un fait insolite en français. Réponds UNIQUEMENT en JSON :
 {"titre": "Titre max 8 mots", "fait": "Description 50-60 mots.", "hashtags": "#fait #insolite #culture"}"""
 
