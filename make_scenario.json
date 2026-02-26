@@ -1,0 +1,194 @@
+{
+  "name": "Facts Insolites - Pipeline Vidéo Automatique",
+  "description": "Génère automatiquement des vidéos TikTok/Shorts avec un fait insolite chaque jour. 100% gratuit.",
+  "flow": [
+    {
+      "id": 1,
+      "module": "builtin:BasicTrigger",
+      "type": "trigger",
+      "label": "⏰ Déclencheur quotidien",
+      "parameters": {
+        "type": "schedule",
+        "interval": "1440",
+        "note": "Se déclenche toutes les 1440 minutes = 1 fois par jour. Modifiez l'heure selon votre fuseau horaire."
+      }
+    },
+    {
+      "id": 2,
+      "module": "http:ActionSendData",
+      "type": "action",
+      "label": "🤖 Générer le fait avec Gemini",
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+        "method": "POST",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "querystring": [
+          {
+            "name": "key",
+            "value": "{{VOTRE_CLE_GEMINI}}"
+          }
+        ],
+        "body": {
+          "type": "json",
+          "content": {
+            "contents": [
+              {
+                "parts": [
+                  {
+                    "text": "Génère un fait insolite surprenant en français. Réponds UNIQUEMENT avec un JSON valide sans markdown. Format: {\"titre\": \"Titre accrocheur max 8 mots\", \"fait\": \"Description en 50-60 mots maximum.\", \"hashtags\": \"#fait #insolite #science #culture #saviez\"}"
+                  }
+                ]
+              }
+            ],
+            "generationConfig": {
+              "temperature": 0.9,
+              "maxOutputTokens": 300
+            }
+          }
+        }
+      },
+      "note": "Obtenez votre clé API GRATUITE sur https://aistudio.google.com/apikey"
+    },
+    {
+      "id": 3,
+      "module": "builtin:SetVariable",
+      "type": "action",
+      "label": "📝 Parser la réponse JSON",
+      "parameters": {
+        "variables": [
+          {
+            "name": "fact_json",
+            "value": "{{parseJSON(2.data.candidates[0].content.parts[0].text)}}",
+            "note": "Extrait le JSON de la réponse Gemini"
+          },
+          {
+            "name": "titre",
+            "value": "{{3.fact_json.titre}}"
+          },
+          {
+            "name": "fait_texte",
+            "value": "{{3.fact_json.fait}}"
+          },
+          {
+            "name": "hashtags",
+            "value": "{{3.fact_json.hashtags}}"
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "module": "http:ActionSendData",
+      "type": "action",
+      "label": "🎬 Appeler le serveur vidéo (Python)",
+      "parameters": {
+        "url": "https://VOTRE-APP.onrender.com/generate",
+        "method": "POST",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "type": "json",
+          "content": {
+            "titre": "{{3.titre}}",
+            "fait": "{{3.fait_texte}}",
+            "hashtags": "{{3.hashtags}}"
+          }
+        }
+      },
+      "note": "Ce module appelle votre script Python hébergé sur Render.com (gratuit). Le serveur retourne l'URL de la vidéo générée."
+    },
+    {
+      "id": 5,
+      "module": "http:ActionGetFile",
+      "type": "action",
+      "label": "⬇️ Télécharger la vidéo générée",
+      "parameters": {
+        "url": "{{4.data.video_url}}",
+        "note": "Récupère le fichier MP4 depuis l'URL retournée par votre serveur Python"
+      }
+    },
+    {
+      "id": 6,
+      "module": "youtube:ActionUploadVideo",
+      "type": "action",
+      "label": "▶️ Publier sur YouTube Shorts",
+      "parameters": {
+        "connection": "VOTRE_CONNEXION_YOUTUBE_MAKE",
+        "title": "{{3.titre}} #Shorts",
+        "description": "{{3.fait_texte}}\n\n{{3.hashtags}}\n\n#Shorts #YouTubeShorts #FactsInsolites",
+        "tags": ["facts", "insolite", "shorts", "culture", "science"],
+        "category": "27",
+        "privacyStatus": "public",
+        "file": "{{5.data}}",
+        "note": "Connectez votre compte YouTube dans Make > Connections. Assurez-vous que la vidéo fait moins de 60 secondes pour être un Short."
+      }
+    },
+    {
+      "id": 7,
+      "module": "builtin:BasicFeeder",
+      "type": "action",
+      "label": "📊 Logger le résultat (optionnel)",
+      "parameters": {
+        "note": "Optionnel : ajoutez ici un module Google Sheets pour logger chaque vidéo publiée (date, titre, URL)"
+      }
+    }
+  ],
+  "instructions": {
+    "etape_1_gemini": {
+      "description": "Obtenir la clé API Gemini gratuite",
+      "steps": [
+        "1. Allez sur https://aistudio.google.com/apikey",
+        "2. Cliquez sur 'Create API Key'",
+        "3. Copiez la clé et remplacez VOTRE_CLE_GEMINI dans le module 2"
+      ]
+    },
+    "etape_2_serveur_python": {
+      "description": "Héberger le script Python gratuitement sur Render.com",
+      "steps": [
+        "1. Créez un compte gratuit sur https://render.com",
+        "2. Créez un nouveau 'Web Service'",
+        "3. Connectez votre repo GitHub contenant generate_video.py + server.py + requirements.txt",
+        "4. Choisissez le plan Free",
+        "5. Ajoutez la variable d'environnement GEMINI_API_KEY",
+        "6. Copiez l'URL de votre service et mettez-la dans le module 4"
+      ]
+    },
+    "etape_3_youtube": {
+      "description": "Connecter YouTube dans Make",
+      "steps": [
+        "1. Dans Make, allez dans Connections > Add Connection",
+        "2. Cherchez 'YouTube' et suivez l'authentification OAuth",
+        "3. Sélectionnez cette connexion dans le module 6"
+      ]
+    },
+    "etape_4_import_make": {
+      "description": "Importer ce scénario dans Make",
+      "steps": [
+        "1. Ouvrez Make.com et créez un nouveau scénario",
+        "2. Cliquez sur les 3 points en haut > Import Blueprint",
+        "3. Collez ce fichier JSON",
+        "4. Configurez les connexions et clés API"
+      ]
+    }
+  },
+  "requirements": {
+    "gratuit": true,
+    "outils": [
+      "Make.com (plan gratuit - 1000 ops/mois)",
+      "Gemini API (gratuit - quota généreux)",
+      "gTTS via Python (gratuit - Google TTS)",
+      "Render.com (hébergement gratuit)",
+      "YouTube Data API (gratuit)"
+    ],
+    "cout_mensuel": "0€"
+  }
+}
