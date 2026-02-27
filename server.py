@@ -5,6 +5,7 @@ import json
 import requests
 from gtts import gTTS
 import subprocess
+import imageio_ffmpeg
 from PIL import Image, ImageDraw, ImageFont
 import textwrap
 import io
@@ -16,6 +17,8 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
 
+FFMPEG_PATH = imageio_ffmpeg.get_ffmpeg_exe()
+
 
 def generate_fact(groq_key):
     url = "https://api.groq.com/openai/v1/chat/completions"
@@ -23,7 +26,7 @@ def generate_fact(groq_key):
         "Authorization": f"Bearer {groq_key}",
         "Content-Type": "application/json"
     }
-    prompt = """Genere un fait insolite detaille en francais pour une video d'environ 1 minute. Reponds UNIQUEMENT en JSON valide, sans markdown : {"titre": "Titre accrocheur max 8 mots", "intro": "Phrase d accroche courte et percutante de 15 mots.", "fait": "Explication detaillee et fascinante du fait en 100-120 mots avec des details, des chiffres, des exemples concrets.", "conclusion": "Phrase de conclusion surprenante de 15 mots.", "hashtags": "#fait #insolite #culture #science #saviez", "mot_cle_image": "mot cle en anglais pour chercher une image liee au sujet exemple ocean space forest animal"}"""
+    prompt = """Genere un fait insolite detaille en francais pour une video d environ 1 minute. Reponds UNIQUEMENT en JSON valide, sans markdown : {"titre": "Titre accrocheur max 8 mots", "intro": "Phrase d accroche courte et percutante de 15 mots.", "fait": "Explication detaillee et fascinante du fait en 100-120 mots avec des details, des chiffres, des exemples concrets.", "conclusion": "Phrase de conclusion surprenante de 15 mots.", "hashtags": "#fait #insolite #culture #science #saviez", "mot_cle_image": "mot cle en anglais pour chercher une image liee au sujet exemple ocean space forest animal"}"""
 
     payload = {
         "model": "llama-3.3-70b-versatile",
@@ -118,7 +121,7 @@ def add_overlay_text(img, fact_data):
 
 def create_video(image_path, audio_path, output_path):
     cmd = [
-        "ffmpeg", "-y",
+        FFMPEG_PATH, "-y",
         "-loop", "1",
         "-i", image_path,
         "-i", audio_path,
