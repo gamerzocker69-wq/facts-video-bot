@@ -8,7 +8,7 @@ from gtts import gTTS
 app = Flask(__name__)
 OUTPUT_DIR = "/tmp/videos"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
 
 @app.route("/", methods=["GET"])
@@ -24,18 +24,28 @@ def health():
 @app.route("/generate-auto", methods=["POST"])
 def generate_auto():
     try:
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-        prompt = """Génère un fait insolite en français. Réponds UNIQUEMENT en JSON :
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        prompt = """Génère un fait insolite en français. Réponds UNIQUEMENT en JSON valide, sans markdown :
 {"titre": "Titre max 8 mots", "fait": "Description 50-60 mots.", "hashtags": "#fait #insolite #culture"}"""
 
-        payload = {"contents": [{"parts": [{"text": prompt}]}]}
-        r = requests.post(url, json=payload)
+        payload = {
+            "model": "llama3-8b-8192",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.9,
+            "max_tokens": 300
+        }
+
+        r = requests.post(url, headers=headers, json=payload)
         response_json = r.json()
 
-        if "candidates" not in response_json:
-            return jsonify({"error": "Gemini error", "details": response_json}), 500
+        if "choices" not in response_json:
+            return jsonify({"error": "Groq error", "details": response_json}), 500
 
-        raw = response_json["candidates"][0]["content"]["parts"][0]["text"]
+        raw = response_json["choices"][0]["message"]["content"]
         raw = raw.strip().replace("```json", "").replace("```", "").strip()
         fact = json.loads(raw)
 
