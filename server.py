@@ -33,7 +33,7 @@ def generate_auto():
 {"titre": "Titre max 8 mots", "fait": "Description 50-60 mots.", "hashtags": "#fait #insolite #culture"}"""
 
         payload = {
-            "model": "llama3-8b-8192",
+            "model": "llama-3.3-70b-versatile",
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.9,
             "max_tokens": 300
