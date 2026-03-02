@@ -126,10 +126,14 @@ def create_video(image_path, audio_path, output_path):
         "-i", image_path,
         "-i", audio_path,
         "-c:v", "libx264",
+        "-preset", "ultrafast",
+        "-crf", "35",
         "-tune", "stillimage",
         "-c:a", "aac",
-        "-b:a", "192k",
+        "-b:a", "128k",
         "-pix_fmt", "yuv420p",
+        "-vf", "scale=540:960",
+        "-threads", "1",
         "-shortest",
         output_path
     ]
