@@ -146,6 +146,16 @@ def health():
     return jsonify({"status": "ok", "message": "Serveur operationnel"})
 
 
+@app.route("/debug", methods=["GET"])
+def debug():
+    key = GROQ_API_KEY
+    return jsonify({
+        "groq_key_set": bool(key),
+        "groq_key_length": len(key),
+        "groq_key_start": key[:8] if key else "VIDE"
+    })
+
+
 @app.route("/generate-auto", methods=["POST"])
 def generate_auto():
     try:
